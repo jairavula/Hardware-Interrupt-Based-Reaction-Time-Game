@@ -85,6 +85,28 @@ void InitSystemTiming() {
   hwTimerRollovers = 0;
 }
 
+
+void T32_INT2_IRQHandler() {
+  Timer32_clearInterruptFlag(TIMER32_1_BASE);
+}
+
+void InitTimer32Instance1(){
+    Timer32_initModule(TIMER32_1_BASE, TIMER32_PRESCALER_1, TIMER32_32BIT,
+                       TIMER32_PERIODIC_MODE);
+    Timer32_setCount(TIMER32_1_BASE, TITLESCREENLOADVALUE);
+
+    Timer32_clearInterruptFlag(TIMER32_1_BASE);
+    Interrupt_enableInterrupt(INT_T32_INT2);
+
+    Interrupt_enableMaster();
+
+    Timer32_startTimer(TIMER32_1_BASE, true);
+
+
+}
+
+
+
 /**
  * Constructs a new Software Timer, using a wait time in milliseconds. The timer
  * uses the hwTimerRollovers variable to keep track of its reference time, and

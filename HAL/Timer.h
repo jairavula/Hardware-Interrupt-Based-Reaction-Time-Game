@@ -22,6 +22,7 @@
   (SYSTEM_CLOCK / 1000)  // number of clock cycles in 1ms
 
 #define LOADVALUE 0xFFFFFFFF
+#define TITLESCREENLOADVALUE 96000000
 #define PRESCALER 1
 
 /**=================================================================================================
@@ -72,6 +73,7 @@ bool SWTimer_expired(SWTimer* timer_p);
 // Initializes the global clock system for the MSP432, as well as a hardware
 // timer under which all of the software timers are based.
 void InitSystemTiming();
+void InitTimer32Instance1();
 
 // Initializes and starts a hardware timer (the second available Timer32)
 void startHWTimer(uint32_t waitTime_ms);
