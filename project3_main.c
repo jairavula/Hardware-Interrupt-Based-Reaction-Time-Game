@@ -218,7 +218,7 @@ void handle_Settings_Screen(HAL *hal_p, Application *app, buttons_t *buttons)
         Game_screen(hal_p, app);
         app->numTrials = trials;
         app->screenState = gameScreen;
-        StartRandomTimer();
+      //StartRandomTimer();
     }
 }
 
@@ -249,6 +249,7 @@ void handle_Game_Screen(HAL *hal_p, Application *app, buttons_t *buttons)
     {
         if (!timerStarted)
         {
+            HWTimerExpired();
             TurnOff_LL1();  // Ensure the LED is off when starting the timer
             StartRandomTimer();  // Start the timer with a random delay
             timerStarted = true;
