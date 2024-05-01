@@ -11,5 +11,8 @@
 #include <ti/devices/msp432p4xx/driverlib/driverlib.h>
 void initTimerA();
 
+double time_elapsed();
+
+
 #endif /* HAL_TIMERA_H_ */
 

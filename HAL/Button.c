@@ -142,7 +142,6 @@ void PORT3_IRQHandler()
     if (GPIO_getInterruptStatus(GPIO_PORT_P3, GPIO_PIN5))
     {
         BB2modified = true;
-
         // A very critical step: If we don't clear the interrupt, the ISR will be
         // called again and again.
         GPIO_clearInterruptFlag(GPIO_PORT_P3, GPIO_PIN5);

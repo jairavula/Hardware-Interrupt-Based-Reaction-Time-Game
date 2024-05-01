@@ -13,12 +13,13 @@
 #define MAX_NUM_TRIALS 3
 
 typedef struct _Application Application;
-typedef enum {titleScreen, configScreen} _screenState;
+typedef enum {titleScreen, configScreen, gameScreen, resultsScreen} _screenState;
 
 struct _Application {
     _screenState screenState;
     SWTimer titleScreenTimer;
     int numTrials;
+    double reactionTimes[MAX_NUM_TRIALS];
     float trialTime[MAX_NUM_TRIALS];
 };
 

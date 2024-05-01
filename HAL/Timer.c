@@ -7,10 +7,16 @@
 
 #include <HAL/LED.h>
 #include <HAL/Timer.h>
+#include <stdbool.h>
+
 
 /** The reference counter which tracks how many rollovers have occurred. Used in
  * timing SWTimers. */
 static volatile uint64_t hwTimerRollovers;
+
+static volatile bool hwTimerExpired;
+
+
 
 /**
  * The ISR used to increment the total number of rollovers which have passed.
@@ -88,7 +94,9 @@ void InitSystemTiming() {
 
 void T32_INT2_IRQHandler() {
   Timer32_clearInterruptFlag(TIMER32_1_BASE);
+  hwTimerExpired = true;
 }
+
 
 void InitTimer32Instance1(){
     Timer32_initModule(TIMER32_1_BASE, TIMER32_PRESCALER_1, TIMER32_32BIT,
@@ -173,4 +181,10 @@ uint64_t SWTimer_elapsedCycles(SWTimer* timer_p) {
 bool SWTimer_expired(SWTimer* timer_p) {
   uint64_t elapsedCycles = SWTimer_elapsedCycles(timer_p);
   return elapsedCycles >= timer_p->cyclesToWait;
+}
+
+bool HWTimerExpired(){
+    bool isExpired = hwTimerExpired;
+    hwTimerExpired = false;
+    return isExpired;
 }

@@ -25,6 +25,8 @@
 #define TITLESCREENLOADVALUE 96000000
 #define PRESCALER 1
 
+
+
 /**=================================================================================================
  * A Software timer object, implemented in the C object-oriented style. Use the
  * constructor [SWTimer_construct()] to create a software timer. The only method
@@ -78,5 +80,6 @@ void InitTimer32Instance1();
 // Initializes and starts a hardware timer (the second available Timer32)
 void startHWTimer(uint32_t waitTime_ms);
 bool HWTimerExpired();
+
 
 #endif /* HAL_TIMER_H_ */
