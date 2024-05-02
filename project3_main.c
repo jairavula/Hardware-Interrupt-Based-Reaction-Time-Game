@@ -33,6 +33,7 @@ void StartRandomTimer();
 void NextTrialTimer();
 void Results_screen(HAL *hal_p, Application * app);
 void handle_Results_screen(HAL *hal_p, Application *app, buttons_t *buttons);
+void Calculate_highScores(HAL *hal_p, Application *app);
 void sleep();
 
 int main(void)
@@ -124,6 +125,8 @@ Application Application_construct()
     Application app;
 
     app.screenState = titleScreen;
+
+    memset(app.meanTimes, 0, sizeof(app.meanTimes));
 
 
 //    app.titleScreenTimer = SWTimer_construct(TITLE_SCREEN_WAIT);
@@ -241,38 +244,43 @@ void handle_Game_Screen(HAL *hal_p, Application *app, buttons_t *buttons)
 {
     static bool timerStarted = false;
     static bool timerAStarted = true;
+    static bool ledIsOff = false;
     static int trialTimeYCoordinate = 40;
     static int i;
-
-
+    static int meanIndex;
     if (app->numTrials > 0)
     {
         if (!timerStarted)
         {
             HWTimerExpired();
             TurnOff_LL1();  // Ensure the LED is off when starting the timer
+            ledIsOff = true;
             StartRandomTimer();  // Start the timer with a random delay
             timerStarted = true;
             timerAStarted = false;
         }
-
-        // Check if the timer has expired
+        if(ledIsOff && buttons->BB1tapped){
+            Graphics_drawString(&hal_p->g_sContext, (int8_t*) "N/A", -1, 55, trialTimeYCoordinate, true);
+            timerStarted = false;
+                       timerAStarted = true;
+                       app->numTrials--;
+                       app->reactionTimes[i] = 0.0;
+                       trialTimeYCoordinate += 8;
+                       NextTrialTimer();
+        }
         if (!timerAStarted && timerStarted && HWTimerExpired())
         {
             TurnOn_LL1();  // Turn on the LED only if the timer has expired
+            ledIsOff = false;
             initTimerA();
             timerAStarted = true;
-            //        timerStarted = false;  // Reset the flag to allow re-starting the timer next time
         }
-        if (timerStarted && timerAStarted && buttons->BB1tapped
-                && !buttons->BB2tapped)
+        if (timerStarted && timerAStarted && buttons->BB1tapped && !buttons->BB2tapped)
         {
             double timeElapsed = time_elapsed();
             app->reactionTimes[i] = timeElapsed;
-
             char valueStr[16]; // Increased buffer size to handle larger floating point numbers
             sprintf(valueStr, "%.3f", timeElapsed); // Formatting the double to a string with 3 decimal places
-
             Graphics_drawString(&hal_p->g_sContext, (int8_t*) valueStr, -1, 55,
                                 trialTimeYCoordinate, true);
             timerStarted = false;
@@ -288,22 +296,19 @@ void handle_Game_Screen(HAL *hal_p, Application *app, buttons_t *buttons)
         trialTimeYCoordinate = 40;
                           timerStarted = false;
                           timerAStarted = true;
-
         TurnOff_LL1();
         double mean = (app->reactionTimes[0] + app->reactionTimes[1] + app->reactionTimes[2]) / (i);
+        app->meanTimes[meanIndex] = mean;
+        meanIndex++;
         char meanStr[16];
         i = 0;
         sprintf(meanStr, "Mean: %.3f", mean); // Formatting the double to a string with 3 decimal places
-                   Graphics_drawString(&hal_p->g_sContext, (int8_t*) meanStr, -1, 35,
-                                       80, true);
+                   Graphics_drawString(&hal_p->g_sContext, (int8_t*) meanStr, -1, 35, 70, true);
                    app->screenState = resultsScreen;
                    Results_screen(hal_p, app);
                    NextTrialTimer();
                    HWTimerExpired();
-
-
     }
-
 }
 
 void Results_screen(HAL *hal_p, Application * app){
@@ -314,6 +319,12 @@ void Results_screen(HAL *hal_p, Application * app){
                                     true);
         Graphics_drawString(&hal_p->g_sContext, (int8_t*) "Results", -1, 5, 5,
         true);
+        Graphics_drawString(&hal_p->g_sContext, (int8_t*) "View High Scores",
+                                    -1, 5, 85,
+                                    true);
+                Graphics_drawString(&hal_p->g_sContext, (int8_t*) "Press BB1",
+                                           -1, 5, 95,
+                                           true);
         Graphics_drawString(&hal_p->g_sContext, (int8_t*) "Return to Settings",
                             -1, 5, 105,
                             true);
@@ -330,8 +341,59 @@ void handle_Results_screen(HAL *hal_p, Application *app, buttons_t *buttons){
         Settings_screen(hal_p, app);
         NextTrialTimer();
     }
+    if (buttons->BB1tapped){
+            Graphics_clearDisplay(&hal_p->g_sContext);
+           // NextTrialTimer();
+            Calculate_highScores(hal_p, app);
+        }
+
 }
 
+
+
+
+int compare(const void *a, const void *b) {
+    double diff = *(double*)a - *(double*)b;
+    return (diff > 0) - (diff < 0); // Return -1, 0, or 1 based on comparison
+}
+
+void Calculate_highScores(HAL *hal_p, Application *app) {
+    double validScores[50];  // Array to hold non-zero scores
+    double topScores[5];     // Array to hold the top 5 scores
+    int count = 0;
+    char buffer[50];         // Buffer for constructing strings to draw
+    int i;
+    // Collect all non-zero scores
+    for (i = 0; i < 50; i++) {
+        if (app->meanTimes[i] > 0) {
+            validScores[count++] = app->meanTimes[i];
+        }
+    }
+
+    // Sort the array of non-zero scores
+    qsort(validScores, count, sizeof(double), compare);
+
+    // Get the top 5 scores
+    int numScoresToDisplay = (count < 5) ? count : 5; // Only display up to 5 or the number of scores we have, whichever is less
+    for (i = 0; i < numScoresToDisplay; i++) {
+        topScores[i] = validScores[i];
+    }
+
+    // Display the top 5 scores
+    for (i = 0; i < numScoresToDisplay; i++) {
+        sprintf(buffer, "%d: %.3f seconds", i + 1, topScores[i]);
+        Graphics_drawString(&hal_p->g_sContext, (int8_t*)buffer,
+                            -1, 10, 30 + i*8, // x, y positions, adjust according to need
+                            true);
+    }
+
+    // In case there are fewer than 5 scores, display this as well
+//    if (numScoresToDisplay < 5) {
+//        Graphics_drawString(&hal_p->g_sContext, (int8_t*)buffer,
+//                            -1, 10, 30 + numScoresToDisplay*20, // Adjust Y position accordingly
+//                            true);
+//    }
+}
 
 void StartRandomTimer()
 {

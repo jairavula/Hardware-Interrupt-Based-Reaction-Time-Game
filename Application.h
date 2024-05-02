@@ -11,6 +11,7 @@
 #include <HAL/HAL.h>
 
 #define MAX_NUM_TRIALS 3
+#define MAX_MEAN_ENTRIES 50
 
 typedef struct _Application Application;
 typedef enum {titleScreen, configScreen, gameScreen, resultsScreen} _screenState;
@@ -21,6 +22,7 @@ struct _Application {
     int numTrials;
     double reactionTimes[MAX_NUM_TRIALS];
     float trialTime[MAX_NUM_TRIALS];
+    double meanTimes[MAX_MEAN_ENTRIES];
 };
 
 
