@@ -17,6 +17,7 @@ typedef struct {
   bool BB1tapped;
   bool BB2tapped;
   bool JSBtapped;
+  bool BB1tappedIRQ;
 } buttons_t;
 
 // This function initializes all buttons

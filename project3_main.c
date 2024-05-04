@@ -34,6 +34,7 @@ void NextTrialTimer();
 void Results_screen(HAL *hal_p, Application * app);
 void handle_Results_screen(HAL *hal_p, Application *app, buttons_t *buttons);
 void Calculate_highScores(HAL *hal_p, Application *app);
+void handle_Trial_End(HAL *hal_p, Application *app ,int *trialTimeYCoordinate, bool *timerStarted, bool *timerAStarted, int *i, int *meanIndex);
 void sleep();
 
 int main(void)
@@ -185,6 +186,10 @@ void Settings_screen(HAL *hal_p, Application *app)
                         5, 48, true);
     Graphics_drawString(&hal_p->g_sContext, (int8_t*) "Trial 3:       sec ", -1,
                         5, 56, true);
+    Graphics_drawString(&hal_p->g_sContext, (int8_t*) "Tap LB2 to Increase. ", -1,
+                           5, 80, true);
+    Graphics_drawString(&hal_p->g_sContext, (int8_t*) "Tap LB1 to Decrease. ", -1,
+                           5, 90, true);
     Graphics_drawString(&hal_p->g_sContext, (int8_t*) "Tap BB2 to begin. ", -1,
                         5, 115, true);
 }
@@ -221,14 +226,18 @@ void handle_Settings_Screen(HAL *hal_p, Application *app, buttons_t *buttons)
         Game_screen(hal_p, app);
         app->numTrials = trials;
         app->screenState = gameScreen;
-      //StartRandomTimer();
+      NextTrialTimer();
     }
 }
 
 void Game_screen(HAL *hal_p, Application *app)
 {
-    Graphics_drawString(&hal_p->g_sContext, (int8_t*) "             ", -1, 5, 5,
+    Graphics_drawString(&hal_p->g_sContext, (int8_t*) "                      ", -1, 5, 5,
                         true);
+    Graphics_drawString(&hal_p->g_sContext, (int8_t*) "                      ", -1, 5, 80,
+                            true);
+    Graphics_drawString(&hal_p->g_sContext, (int8_t*) "                      ", -1, 5, 90,
+                            true);
     Graphics_drawString(&hal_p->g_sContext, (int8_t*) "Testing", -1, 5, 5,
     true);
     Graphics_drawString(&hal_p->g_sContext, (int8_t*) "React to LED w/ BB1. ",
@@ -253,13 +262,14 @@ void handle_Game_Screen(HAL *hal_p, Application *app, buttons_t *buttons)
         if (!timerStarted)
         {
             HWTimerExpired();
+            initTimerA();
             TurnOff_LL1();  // Ensure the LED is off when starting the timer
             ledIsOff = true;
             StartRandomTimer();  // Start the timer with a random delay
             timerStarted = true;
             timerAStarted = false;
         }
-        if(ledIsOff && buttons->BB1tapped){
+        if(ledIsOff && buttons->BB1tapped && BB1PressedIRQ()){
             Graphics_drawString(&hal_p->g_sContext, (int8_t*) "N/A", -1, 55, trialTimeYCoordinate, true);
             timerStarted = false;
                        timerAStarted = true;
@@ -275,7 +285,7 @@ void handle_Game_Screen(HAL *hal_p, Application *app, buttons_t *buttons)
             initTimerA();
             timerAStarted = true;
         }
-        if (timerStarted && timerAStarted && buttons->BB1tapped && !buttons->BB2tapped)
+        if (timerStarted && timerAStarted && buttons->BB1tapped && !buttons->BB2tapped && BB1PressedIRQ())
         {
             double timeElapsed = time_elapsed();
             app->reactionTimes[i] = timeElapsed;
@@ -293,22 +303,26 @@ void handle_Game_Screen(HAL *hal_p, Application *app, buttons_t *buttons)
     }
     else
     {
-        trialTimeYCoordinate = 40;
-                          timerStarted = false;
-                          timerAStarted = true;
-        TurnOff_LL1();
-        double mean = (app->reactionTimes[0] + app->reactionTimes[1] + app->reactionTimes[2]) / (i);
-        app->meanTimes[meanIndex] = mean;
-        meanIndex++;
-        char meanStr[16];
-        i = 0;
-        sprintf(meanStr, "Mean: %.3f", mean); // Formatting the double to a string with 3 decimal places
-                   Graphics_drawString(&hal_p->g_sContext, (int8_t*) meanStr, -1, 35, 70, true);
-                   app->screenState = resultsScreen;
-                   Results_screen(hal_p, app);
-                   NextTrialTimer();
-                   HWTimerExpired();
+        handle_Trial_End(hal_p, app, &trialTimeYCoordinate, &timerStarted,&timerAStarted, &i, &meanIndex);
     }
+}
+
+void handle_Trial_End(HAL *hal_p, Application *app ,int *trialTimeYCoordinate, bool *timerStarted, bool *timerAStarted, int *i, int *meanIndex){
+    *trialTimeYCoordinate = 40;
+                              *timerStarted = false;
+                              *timerAStarted = true;
+            TurnOff_LL1();
+            double mean = (app->reactionTimes[0] + app->reactionTimes[1] + app->reactionTimes[2]) / (*i);
+            app->meanTimes[*meanIndex] = mean;
+            (*meanIndex)++;
+            char meanStr[16];
+            *i = 0;
+            sprintf(meanStr, "Mean: %.3f", mean); // Formatting the double to a string with 3 decimal places
+                       Graphics_drawString(&hal_p->g_sContext, (int8_t*) meanStr, -1, 35, 70, true);
+                       app->screenState = resultsScreen;
+                       Results_screen(hal_p, app);
+                       NextTrialTimer();
+                       HWTimerExpired();
 }
 
 void Results_screen(HAL *hal_p, Application * app){
@@ -387,12 +401,6 @@ void Calculate_highScores(HAL *hal_p, Application *app) {
                             true);
     }
 
-    // In case there are fewer than 5 scores, display this as well
-//    if (numScoresToDisplay < 5) {
-//        Graphics_drawString(&hal_p->g_sContext, (int8_t*)buffer,
-//                            -1, 10, 30 + numScoresToDisplay*20, // Adjust Y position accordingly
-//                            true);
-//    }
 }
 
 void StartRandomTimer()

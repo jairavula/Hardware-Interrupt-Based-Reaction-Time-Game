@@ -12,6 +12,8 @@
 void initTimerA();
 
 double time_elapsed();
+bool BB1PressedIRQ();
+extern volatile bool buttonPressedViaIRQ;
 
 
 #endif /* HAL_TIMERA_H_ */

@@ -11,6 +11,7 @@
 
 #include "HAL/LED.h"
 #include "HAL/Timer.h"
+#include "HAL/TimerA.h"
 
 // A boolean variable that is true when a high-to-low transition is sensed on
 // JSB For a global variable, the keyword static limits the scope of the
@@ -328,6 +329,31 @@ bool BB1tapped()
     return tapped;
 }
 
+bool BB1tappedIRQ() {
+    static bool debouncing = false;
+    static SWTimer debounceTimer;
+    bool tapped = false;
+
+    if (debouncing && SWTimer_expired(&debounceTimer)) {
+        debouncing = false;
+    }
+
+    if (!debouncing && buttonPressedViaIRQ && BB1modified) { // Check the global flag
+        tapped = true;
+        debouncing = true;
+        debounceTimer = SWTimer_construct(DEBOUNCE_WAIT);
+        SWTimer_start(&debounceTimer);
+        buttonPressedViaIRQ = false; // Reset the flag
+    }
+
+    BB1modified = false; // Assuming you still need to clear this flag as well
+
+    return tapped;
+}
+
+
+
+
 bool BB2tapped()
 {
     // This variable is true if we are in debouncing state (we are ignoring the
@@ -383,6 +409,7 @@ buttons_t updateButtons()
     buttons.LB2tapped = LB2tapped();
     buttons.BB1tapped = BB1tapped();
     buttons.BB2tapped = BB2tapped();
+    buttons.BB1tappedIRQ = BB1tappedIRQ();
 
     return (buttons);
 }

@@ -14,6 +14,7 @@
 volatile static int TimerARollovers=0;
 volatile static int CaptureRollovers=0;
 volatile static uint_fast16_t CaptureCycles=0;
+volatile bool buttonPressedViaIRQ = false;
 
 double time_elapsed(){
     uint64_t cycles = CaptureCycles;
@@ -24,7 +25,11 @@ double time_elapsed(){
     return total_seconds;
 }
 
-
+bool BB1PressedIRQ(){
+    bool BB1pressed = buttonPressedViaIRQ;
+    buttonPressedViaIRQ = false;
+    return BB1pressed;
+}
 
 void TA0_N_IRQHandler() {
 
@@ -35,6 +40,7 @@ void TA0_N_IRQHandler() {
 
         CaptureCycles = Timer_A_getCaptureCompareCount(TIMER_A0_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_2);
         CaptureRollovers=TimerARollovers;
+        buttonPressedViaIRQ = true;
 
     }
     Timer_A_clearCaptureCompareInterrupt(TIMER_A0_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_2);
