@@ -396,6 +396,12 @@ void Calculate_highScores(HAL *hal_p, Application *app) {
     Graphics_drawString(&hal_p->g_sContext, (int8_t*) "HIGH SCORES",
                                        -1, 5,5,
                                        true);
+    Graphics_drawString(&hal_p->g_sContext, (int8_t*) "Return to Settings",
+                                -1, 5, 105,
+                                true);
+            Graphics_drawString(&hal_p->g_sContext, (int8_t*) "Press BB2",
+                                       -1, 5, 115,
+                                       true);
 
 }
 
